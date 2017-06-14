@@ -180,18 +180,25 @@ public class LoadMoreRecyclerView extends RecyclerView {
     /**
      * 开始加载更多
      */
+    private boolean isMethodLocked;//单线程方法锁，防止回调两次导致的“类线程混乱”
     public void startLoadMore() {
-        if (mUIhandler == null || mState == loadMoreState.LOADING || mState == loadMoreState.DONE) {//如果正在加载，就不再执行
-            return;
-        }
-        if (mState == loadMoreState.NORMAL || mState == loadMoreState.COMPLETE) {//如果是第一次或夹在完成状态，就再次进行加载
-            scrollToPosition(totalItemCount - 1);//滑动到底部（防止只出现一半footer的现象）
-            mUIhandler.onStateRefreshing();//更换为加载中UI
-            mState = loadMoreState.LOADING;//改变状态
-            if (mHandler != null) {
-                mHandler.onLoadMoreBegain();//回调加载更多请求
+        if (!isMethodLocked) {
+            isMethodLocked = true;  //进来就锁上
+            if (mUIhandler == null || mState == loadMoreState.LOADING || mState == loadMoreState.DONE) {//如果正在加载，就不再执行
+                isMethodLocked = false;
+                return;
+            }
+            if (mState == loadMoreState.NORMAL || mState == loadMoreState.COMPLETE) {//如果是第一次或夹在完成状态，就再次进行加载
+                scrollToPosition(totalItemCount - 1);//滑动到底部（防止只出现一半footer的现象）
+                mUIhandler.onStateRefreshing();//更换为加载中UI
+                mState = loadMoreState.LOADING;//改变状态
+                if (mHandler != null) {
+                    mHandler.onLoadMoreBegain();//回调加载更多请求
+                }
+                isMethodLocked = false;
             }
         }
+
     }
 
     /**
